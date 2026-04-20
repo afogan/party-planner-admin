@@ -1,6 +1,6 @@
 // === Constants ===
 const BASE = "https://fsa-crud-2aa9294fe819.herokuapp.com/api";
-const COHORT = ""; // Make sure to change this!
+const COHORT = "/2602-ford"; ; // Make sure to change this!
 const API = BASE + COHORT;
 
 // === State ===
@@ -12,7 +12,7 @@ let guests = [];
 /** Updates state with all parties from the API */
 async function getParties() {
   try {
-    const response = await fetch(API + "/events");
+    const response = await fetch(API + "/events",);
     const result = await response.json();
     parties = result.data;
     render();
@@ -24,7 +24,7 @@ async function getParties() {
 /** Updates state with a single party from the API */
 async function getParty(id) {
   try {
-    const response = await fetch(API + "/events/" + id);
+    const response = await fetch(API + "/events/" + id,);
     const result = await response.json();
     selectedParty = result.data;
     render();
@@ -36,7 +36,7 @@ async function getParty(id) {
 /** Updates state with all RSVPs from the API */
 async function getRsvps() {
   try {
-    const response = await fetch(API + "/rsvps");
+    const response = await fetch(API + "/rsvps",);
     const result = await response.json();
     rsvps = result.data;
     render();
@@ -48,7 +48,7 @@ async function getRsvps() {
 /** Updates state with all guests from the API */
 async function getGuests() {
   try {
-    const response = await fetch(API + "/guests");
+    const response = await fetch(API + "/guests",);
     const result = await response.json();
     guests = result.data;
     render();
@@ -56,6 +56,29 @@ async function getGuests() {
     console.error(e);
   }
 }
+async function addParty(party) {
+try {
+    await fetch(API + "/events",{
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(party)
+    });
+    await getParties();
+} catch (e) {
+    console.error(e);
+}
+}
+async function removeParty(id) {
+try {
+    await fetch(API + "/events/" + id, {
+        method: "DELETE",
+    });
+    await getParties();
+} catch (e) {
+    console.error(e);
+}
+}
+
 
 // === Components ===
 
@@ -101,11 +124,14 @@ function SelectedParty() {
     </time>
     <address>${selectedParty.location}</address>
     <p>${selectedParty.description}</p>
-    <GuestList></GuestList>
+    <button>Remove from list</button>
   `;
-  $party.querySelector("GuestList").replaceWith(GuestList());
-
-  return $party;
+const $remove = $party.querySelector("button");
+$remove.addEventListener("click", () => {
+  removeParty(selectedParty.id);
+  selectedParty = undefined;
+});
+return $party;
 }
 
 /** List of guests attending the selected party */
@@ -127,6 +153,43 @@ function GuestList() {
 
   return $ul;
 }
+function NewPartyForm() {
+  const $form = document.createElement("form");
+  $form.innerHTML =/*html*/ `
+    <label>
+      Name
+      <input name="name" required />
+    </label>
+    <label>
+      Description
+      <input name="description"/>
+    </label>
+    <label>
+      Date
+      <input name="date" type="date" required/>
+    </label>
+     <label>
+    Location
+       <input name="location" required />
+    </label>
+    <button>
+    Add Party
+    </button>
+  `;
+  $form.addEventListener("submit", (event) => {
+    event.preventDefault();
+
+    const data = new FormData($form);
+
+      addParty({
+      name: data.get("name"), 
+      description: data.get("description"), 
+      date: new Date(data.get("date")).toISOString(),
+      location: data.get("location"),
+    });
+  });
+  return $form;
+}
 
 // === Render ===
 function render() {
@@ -137,6 +200,8 @@ function render() {
       <section>
         <h2>Upcoming Parties</h2>
         <PartyList></PartyList>
+        <h3>Add Party</h3>
+        <NewPartyForm></NewPartyForm>
       </section>
       <section id="selected">
         <h2>Party Details</h2>
@@ -147,6 +212,7 @@ function render() {
 
   $app.querySelector("PartyList").replaceWith(PartyList());
   $app.querySelector("SelectedParty").replaceWith(SelectedParty());
+  $app.querySelector("NewPartyForm").replaceWith(NewPartyForm());
 }
 
 async function init() {
